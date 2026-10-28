@@ -2418,6 +2418,16 @@ pub fn run(control: &Path) -> std::io::Result<()> {
                                                 close_own_pane(control, &current, &mut notice);
                                         }
                                     }
+                                    EditAction::SaveAndClose => match editor.save(false) {
+                                        Ok(SaveOutcome::Saved) => {
+                                            should_close =
+                                                close_own_pane(control, &current, &mut notice);
+                                        }
+                                        Ok(SaveOutcome::Conflict) => {
+                                            prompt = Some(Prompt::Conflict(Some(Pending::Close)))
+                                        }
+                                        Err(e) => editor.set_status(format!("save failed: {e}")),
+                                    },
                                     EditAction::Save => match editor.save(false) {
                                         Ok(SaveOutcome::Saved) => notice = None,
                                         Ok(SaveOutcome::Conflict) => {

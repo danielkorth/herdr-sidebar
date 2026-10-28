@@ -1115,10 +1115,16 @@ It replaced the original pane-ID-keyed park/restore implementation; the optional
   invalid-UTF-8, >1 MiB, and >5000-line content stays read-only. Editor state lives in
   `src/editor.rs`; do not fold editable text back into `Doc`, whose styled lines are the
   deliberately read-only preview/diff representation.
-- Editor positions are Unicode-scalar columns, never byte offsets. Visual navigation and
-  scrolling use `wrapped_rows` (word-boundary first, hard-wrap only when a word cannot fit),
-  so `scroll` is a WRAPPED-ROW index rather than a source-line index. UTF-8 BOM and the
-  detected LF/CRLF convention round-trip on explicit Ctrl/Cmd+S saves.
+- The in-pane editor uses a small Vim keymap (`src/editor/vim.rs`): NORMAL by default;
+  `i/a/I/A/o/O` insert, Esc returns to NORMAL, `h/j/k/l`, `w/b`, `0/^/$`, `gg/G`,
+  counts, `v`, `d/c/y` with doubled-line and word motions, `x`, `D/C`, `p/P`, `u` and
+  Ctrl/Cmd+R redo. `:` supports `:w`, `:q`, `:wq`/`:x`, and `:preview`; dirty-buffer
+  close and external-change conflicts must continue through the viewer's existing prompts.
+  Never make normal-mode printable keys mutate the buffer. Editor positions are Unicode-scalar
+  columns, never byte offsets. Visual navigation and scrolling use `wrapped_rows`
+  (word-boundary first, hard-wrap only when a word cannot fit), so `scroll` is a WRAPPED-ROW
+  index rather than a source-line index. UTF-8 BOM and the detected LF/CRLF convention
+  round-trip on explicit saves.
 - The loaded/saved raw bytes are the external-change baseline. A clean buffer reloads a
   valid external change; a dirty buffer warns and save returns a conflict until the user
   explicitly chooses overwrite or reload. Do not replace this with mtime-only detection —

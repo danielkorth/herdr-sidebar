@@ -16,9 +16,14 @@ The Git footer keeps branch switching and sync one click away in every view and 
 from Settings.
 Common image formats render directly in the preview pane; videos show a poster frame when
 `ffmpeg` is available on `PATH`.
-To open clicked files in a terminal editor, configure "Custom editor…" in sidebar Settings, then
-enable "Use editor on click". Clicking an already-open file focuses its existing editor tab;
-keyboard Enter continues to use the built-in preview.
+The built-in editor has Vim-style NORMAL mode by default (`h/j/k/l`, `w/b`, `dd`, `yy`,
+`p`, `u`, counts, visual `v`, and more); `i` enters INSERT, Esc returns to NORMAL, and
+`:w`, `:q`, `:wq` save/close through the usual conflict and unsaved-change prompts. `:preview`
+leaves edit mode. The footer shows the active mode and common keys.
+
+To open clicked files in a separate terminal editor, configure "Custom editor…" in sidebar
+Settings, then enable "Use editor on click". Clicking an already-open file focuses its existing
+editor tab; keyboard Enter continues to use the built-in preview.
 
 ## Install
 

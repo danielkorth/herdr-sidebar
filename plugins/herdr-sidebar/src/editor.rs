@@ -18,6 +18,9 @@ use unicode_width::UnicodeWidthChar;
 
 use crate::actions::{ClipboardWrite, copy_to_clipboard, paste_from_clipboard};
 
+mod vim;
+use vim::Vim;
+
 const TAB_WIDTH: usize = 4;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
@@ -72,6 +75,7 @@ pub enum EditAction {
     Leave,
     Close,
     Save,
+    SaveAndClose,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -94,6 +98,7 @@ pub struct Editor {
     status: Option<String>,
     search: Option<Search>,
     mouse_anchor: Option<TextPos>,
+    vim: Vim,
 }
 
 impl Editor {
@@ -142,6 +147,7 @@ impl Editor {
             status: None,
             search: None,
             mouse_anchor: None,
+            vim: Vim::default(),
         })
     }
 
@@ -185,9 +191,26 @@ impl Editor {
     }
 
     pub fn on_key(&mut self, key: KeyEvent, wrap_width: usize, page: usize) -> EditAction {
+        let before = self.snapshot();
+        let action = self.handle_key(key, wrap_width, page);
+        if self.lines != before.lines && !self.vim.restoring {
+            self.vim.undo.push(before);
+            if self.vim.undo.len() > 100 {
+                self.vim.undo.remove(0);
+            }
+            self.vim.redo.clear();
+        }
+        self.vim.restoring = false;
+        action
+    }
+
+    fn handle_key(&mut self, key: KeyEvent, wrap_width: usize, page: usize) -> EditAction {
         self.mouse_anchor = None;
         if self.search.is_some() {
             return self.on_search_key(key);
+        }
+        if let Some(action) = self.on_vim_key(key) {
+            return action;
         }
         let shortcut = (key.modifiers.contains(KeyModifiers::CONTROL)
             && !key.modifiers.contains(KeyModifiers::ALT))
@@ -855,10 +878,14 @@ impl Editor {
                 " Find: {}  Enter next  Shift+Enter previous  Esc done",
                 search.query
             )
-        } else if let Some(status) = &self.status {
-            format!(" {status}")
         } else {
-            " click/drag select  arrows move  Ctrl/Cmd+F find  Ctrl/Cmd+S save  Esc preview".into()
+            format!(
+                " {}  {}",
+                self.vim.label(),
+                self.status
+                    .as_deref()
+                    .unwrap_or("i insert  v select  hjkl move  :w save  :q close  Ctrl+Q close")
+            )
         };
         frame.render_widget(Paragraph::new(Line::from(footer_text).dim()), footer);
 
